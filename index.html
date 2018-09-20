@@ -300,13 +300,14 @@ h1 {
       maxQueueCapacity: 50
     });
   heartbeat.scaleByHeight(150);
+/*
   setInterval(function() {
     heartbeat.beat({
       color: oranges[getRandomInt(0, oranges.length - 1)],
       space: getRandomInt(0, 10)
     });
   }, 500);
-
+*/
   var digitalClock = new zeu.DigitalClock('digital-clock', {
     numberColor: orange,
     dashColor: COLOR.transparent,
@@ -604,6 +605,28 @@ h1 {
     }
     return a;
   }
+  
+  var wsurl = "192.168.1.50:1880/admin/ws/linking";
+
+  var connection = new WebSocket('ws://html5rocks.websocket.org/echo', ['soap', 'xmpp']);
+  // When the connection is open, send some data to the server
+  connection.onopen = function () {
+    // connection.send('start'); // Send the message 'start' to the server
+    heartbeat.beat({
+      color: oranges[getRandomInt(0, oranges.length - 1)],
+      space: getRandomInt(0, 10)
+    });
+  };
+
+  // Log errors
+  connection.onerror = function (error) {
+    console.log('WebSocket Error ' + error);
+  };
+
+  // Log messages from the server
+  connection.onmessage = function (e) {
+    console.log('Server: ' + e.data);
+  };
 </script>
 </body>
 </html>
