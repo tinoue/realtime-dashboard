@@ -72,40 +72,42 @@ h1 {
   <div class="container">
     <div class="row">
       <div class="col-lg-8">
+          <h1>HOME ENVIRONMENT</h1>
+      </div>
+      <div class="col-lg-4">
+        <h2>TIME</h2>
+        <canvas id="digital-clock" width="200" height="50"></canvas>
+      </div>    
+    </div>
+    <div class="row">
+      <div class="col-lg-3">
+          <canvas id="speed-circle-0" width="150" height="150"></canvas>
+      </div>
+      <div class="col-lg-6">
         <div class="row">
-          <div class="col-lg-8">
-            <h1>MY COMMAND CENTER</h1>
-            <div><a href="https://github.com/shzlw/zeu" style="font-size: 18px;">by Zeu.js</a></div>
-            <div style="font-size: 22px; font-weight: bold;">US-EAST-01</div>
-          </div>
-          <div class="col-lg-4">
-            <h2>TIME</h2>
-            <canvas id="digital-clock" width="200" height="50"></canvas>
+          <h2>LIVING</h2>
+        </div>
+        <div class="row">
+          <canvas id="heartbeat-0" width="400" height="150"></canvas>
+        </div>
+      </div>
+      <div class="col-lg-3">
+        <div class="row no-gutters text-center">
+          <div class="col-lg-3 pt-4 capacity-title">TEMP</div>
+          <div class="col-lg-9">
+            <canvas id="temp-meter-0" width="400" height="50"></canvas>
           </div>
         </div>
-        
-        <canvas id="heartbeat" width="730" height="150"></canvas>
-      </div>
-      <div class="col-lg-4 border-left-white">
-        <h2>VOLUME</h2>
-        <div class="row no-gutters">
-          <div class="col-2">
-            <canvas id="bar-meter-1" width="65" height="200"></canvas>
+        <div class="row no-gutters text-center">
+          <div class="col-lg-3 pt-4 capacity-title">HUMID</div>
+          <div class="col-lg-9">
+            <canvas id="humid-meter-0" width="400" height="50"></canvas>
           </div>
-          <div class="col-2">
-            <canvas id="bar-meter-2" width="65" height="200"></canvas>
-          </div>
-          <div class="col-2">
-            <canvas id="bar-meter-3" width="65" height="200"></canvas>
-          </div>
-          <div class="col-2">
-            <canvas id="bar-meter-4" width="65" height="200"></canvas>
-          </div>
-          <div class="col-2">
-            <canvas id="bar-meter-5" width="65" height="200"></canvas>
-          </div>
-          <div class="col-2">
-            <canvas id="bar-meter-6" width="65" height="200"></canvas>
+        </div>
+        <div class="row no-gutters text-center">
+          <div class="col-lg-3 pt-4 capacity-title">THI</div>
+          <div class="col-lg-9">
+            <canvas id="thi-meter-0" width="400" height="50"></canvas>
           </div>
         </div>
       </div>
@@ -264,6 +266,27 @@ h1 {
 
 <script src="./zeu.min.js"></script>
 <script>
+  var wsurl = "ws://192.168.1.50:1880/ws/linking";
+  var sensors = {
+    living: {
+      id: 0,
+      name: "Living room"
+    },
+    dad: {
+      id: 1,
+      name: "Dad's room"
+    },
+    boy: {
+      id: 2,
+      name: "Living room"
+    },
+    girl: {
+      id: 3,
+      name: "Living room"
+    }
+  }
+
+
   var bgGreen = '#57dba2';
   var bgBlue = '#0385b8';
   var yellow = '#ecdf6c';
@@ -290,30 +313,29 @@ h1 {
     transparent: 'rgba(255, 255, 255, 0)'
   };
 
-  zeu.Settings.fps = 120;
+  zeu.Settings.fps = 60;
 
-  var heartbeat = new zeu.Heartbeat('heartbeat',
+  var heartbeats = [];
+  for (var key in sensors) {
+    var id = sensors[key].id;
+    if (id != 0) continue;
+    var heartbeat = new zeu.Heartbeat('heartbeat-' + sensors[key].id,
     {
-      viewWidth: 730,
-      speed: 2,
+      viewWidth: 400,
+      speed: 3,
       fontColor: COLOR.lightGrey,
       maxQueueCapacity: 50
     });
-  heartbeat.scaleByHeight(150);
-/*
-  setInterval(function() {
-    heartbeat.beat({
-      color: oranges[getRandomInt(0, oranges.length - 1)],
-      space: getRandomInt(0, 10)
-    });
-  }, 500);
-*/
+    heartbeat.scaleByHeight(150);
+    heartbeats.push(heartbeat);
+  }
+
   var digitalClock = new zeu.DigitalClock('digital-clock', {
     numberColor: orange,
     dashColor: COLOR.transparent,
   });
   digitalClock.scaleByHeight(50);
-  
+  /*
   var barMeters = [];
   for (var i = 1; i <= 6; i++) {
     var barMeter = new zeu.BarMeter('bar-meter-' + i, {
@@ -337,7 +359,7 @@ h1 {
       }
     }
   }, 1000);
-
+*/
   var volumeMeters = [];
   for (var i = 1; i <= 4; i++) {
     var volumeMeter = new zeu.VolumeMeter('volume-meter-' + i, {
@@ -474,58 +496,37 @@ h1 {
   }, 300);
 
   var speedCircles = [];
-  for (var i = 1; i <= 2; i++) {
-    var speedCircle = new zeu.SpeedCircle('speed-circle-' + i, {
-      text: {
-        value: 'ON',
-        color: COLOR.white
-      },
-      circle1: {
-        speed: getRandomInt(-1, 1),
-        color: COLOR.lightGrey
-      },
-      circle2: {
-        speed: getRandomInt(-1, 1),
-        color: bgGreen
-      },
-      circle3: {
-        speed: getRandomInt(-1, 1),
-        color: COLOR.white
-      },
-      circle4: {
-        speed: getRandomInt(-1, 1),
-        color: oranges[4]
-      }
-    });
-    speedCircle.scaleByHeight(170);
+  for (var key in sensors) {
+    var speedCircle = new zeu.SpeedCircle('speed-circle-' + sensors[key].id, {});
+    setSpeedCircleDown(speedCircle, false);
+    speedCircle.scaleByHeight(150);
     speedCircles.push(speedCircle);
   }
 
-  for (var i = 3; i <= 4; i++) {
-    var speedCircle = new zeu.SpeedCircle('speed-circle-' + i, {
-      text: {
-        value: 'HIGH',
-        color: COLOR.white
-      },
-      circle1: {
-        speed: 1,
-        color: oranges[3],
-      },
-      circle2: {
-        speed: -2,
-        color: oranges[2]
-      },
-      circle3: {
-        speed: 3,
-        color: oranges[1]
-      },
-      circle4: {
-        speed: -4,
-        color: oranges[0]
-      }
-    });
-    speedCircle.scaleByHeight(170);
-    speedCircles.push(speedCircle);
+  function setSpeedCircleDown(speedCircle, battLow) {
+    speedCircle.value = battLow ? 'BATT' : 'DOWN';
+    speedCircle.color = COLOR.white;
+    speedCircle.speed = 1;
+    speedCircle.color = oranges[3];
+    speedCircle.speed = -2;
+    speedCircle.color = oranges[2];
+    speedCircle.speed = 3;
+    speedCircle.color = oranges[1];
+    speedCircle.speed = -4;
+    speedCircle.color = oranges[0];
+  }
+
+  function setSpeedCircleUp(speedCircle) {
+    speedCircle.textValue = 'UP';
+    speedCircle.textColor = COLOR.white;
+    speedCircle.speed1 = 1;
+    speedCircle.color = COLOR.lightGrey;
+    speedCircle.speed2 = -2;
+    speedCircle.color2 = bgGreen;
+    speedCircle.speed3 = 3;
+    speedCircle.color3 = COLOR.white;
+    speedCircle.speed4 = -4;
+    speedCircle.color4 = oranges[4];
   }
 
   setInterval(function() {
@@ -536,6 +537,34 @@ h1 {
       speedCircles[i].speed4 = -4 * getRandomInt(1, 3);
     }
   }, 3000);
+
+  var tempMeters = [];
+  var humidMeters = [];
+  var thiMeters = [];
+
+  for (var key in sensors) {
+    var id = sensors[key].id;
+    if (id != 0) continue;
+
+    var tempMeter = new zeu.TextMeter('temp-meter-' + id, {
+      viewWidth: 400,
+      arrowColor: blue,
+      displayValue: 'MIDDLE',
+      marker: {
+        bgColor: yellow,
+        fontColor: COLOR.white
+      },
+      bar: {
+        speed: 15,
+        fillColor: yellow,
+        bgColor: COLOR.lightGrey,
+        borderColor: COLOR.transparent
+      }
+    });
+    tempMeter.scaleByHeight(50);
+    tempMeters.push(tempMeter);
+
+  }
 
   var textMeters = [];
   for (var i = 1; i <= 2; i++) {
@@ -606,16 +635,30 @@ h1 {
     return a;
   }
   
-  var wsurl = "192.168.1.50:1880/admin/ws/linking";
+  ////////////////////////////////////////////////////////////////
+  // Websocket sensor data handling
+  ////////////////////////////////////////////////////////////////
 
-  var connection = new WebSocket('ws://html5rocks.websocket.org/echo', ['soap', 'xmpp']);
+  var serviceColor = {
+    temperature: {
+      color: COLOR.yellow
+    },
+    humidity: {
+      color: COLOR.cyan
+    },
+    battery: {
+      color: COLOR.red
+    },
+    illuminance: {
+      color: COLOR.white
+    }
+  }
+
+  var connection = new WebSocket(wsurl/*, ['soap', 'xmpp']*/);
   // When the connection is open, send some data to the server
   connection.onopen = function () {
+    console.log('WebSoekct opened.');
     // connection.send('start'); // Send the message 'start' to the server
-    heartbeat.beat({
-      color: oranges[getRandomInt(0, oranges.length - 1)],
-      space: getRandomInt(0, 10)
-    });
   };
 
   // Log errors
@@ -626,7 +669,24 @@ h1 {
   // Log messages from the server
   connection.onmessage = function (e) {
     console.log('Server: ' + e.data);
+    var payload = JSON.parse(e.data);
+
+    if (payload && payload.name && sensors[payload.name]) {
+      parseThSensor(payload);
+    }
   };
+
+  function parseThSensor(payload) {
+    var sensor = sensors[payload.name];
+    var id = sensor.id;
+    if (id != 0) return;
+    heartbeats[id].beat({
+      color: oranges[getRandomInt(0, oranges.length - 1)],
+      space: getRandomInt(0, 10)
+    });
+
+    setSpeedCircleUp(speedCircles[id]);
+  }
 </script>
 </body>
 </html>
